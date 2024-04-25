@@ -1,0 +1,76 @@
+import pandas as pd
+from itertools import combinations
+
+# Load the cleaned and preprocessed dataset
+df = pd.read_csv('Lottery_Powerball_Cleaned.csv')
+
+# Calculate the frequency and percentage of each main number
+main_numbers = df[['Number 1', 'Number 2', 'Number 3', 'Number 4', 'Number 5']]
+main_freq = main_numbers.stack().value_counts().sort_index()
+main_freq_pct = main_freq / main_freq.sum() * 100
+
+# Calculate the frequency and percentage of each Powerball number
+powerball_freq = df['Powerball'].value_counts().sort_index()
+powerball_freq_pct = powerball_freq / powerball_freq.sum() * 100
+
+# Print the frequency and percentage of each main number
+print("Frequency and Percentage of Main Numbers:")
+for number, freq, pct in zip(main_freq.index, main_freq.values, main_freq_pct.values):
+    print(f"Number {number}: Frequency = {freq}, Percentage = {pct:.2f}%")
+
+# Print the frequency and percentage of each Powerball number
+print("\nFrequency and Percentage of Powerball Numbers:")
+for number, freq, pct in zip(powerball_freq.index, powerball_freq.values, powerball_freq_pct.values):
+    print(f"Number {number}: Frequency = {freq}, Percentage = {pct:.2f}%")
+
+
+# Function to update the frequency counts with new draws
+def update_frequency(new_data):
+    global main_freq, powerball_freq, main_freq_pct, powerball_freq_pct
+
+    new_main_numbers = new_data[['Number 1', 'Number 2', 'Number 3', 'Number 4', 'Number 5']]
+    new_main_freq = new_main_numbers.stack().value_counts()
+    main_freq = main_freq.add(new_main_freq, fill_value=0).astype(int)
+    main_freq_pct = main_freq / main_freq.sum() * 100
+
+    new_powerball_freq = new_data['Powerball'].value_counts()
+    powerball_freq = powerball_freq.add(new_powerball_freq, fill_value=0).astype(int)
+    powerball_freq_pct = powerball_freq / powerball_freq.sum() * 100
+
+
+# Function to calculate the frequency of a specific combination
+def combination_frequency(combination):
+    combo_df = df[df[['Number 1', 'Number 2', 'Number 3', 'Number 4', 'Number 5']].isin(combination).all(axis=1)]
+    return len(combo_df)
+
+
+# Calculate the frequency of all combinations (pairs, triplets, etc.)
+combo_freq = {}
+for r in range(2, 6):
+    for combo in combinations(range(1, 70), r):
+        combo_freq[combo] = combination_frequency(combo)
+
+# Print the most common and least common combinations
+print("\nMost Common Combinations:")
+for combo, freq in sorted(combo_freq.items(), key=lambda x: x[1], reverse=True)[:5]:
+    print(f"Combination {combo}: Frequency = {freq}")
+
+print("\nLeast Common Combinations:")
+for combo, freq in sorted(combo_freq.items(), key=lambda x: x[1])[:5]:
+    print(f"Combination {combo}: Frequency = {freq}")
+
+# Statistical Analysis
+main_numbers_flattened = main_numbers.values.flatten()
+powerball_numbers = df['Powerball'].values
+
+print("\nStatistical Analysis of Main Numbers:")
+print(f"Mean: {main_numbers_flattened.mean():.2f}")
+print(f"Median: {pd.Series(main_numbers_flattened).median():.2f}")
+print(f"Mode: {pd.Series(main_numbers_flattened).mode().values}")
+print(f"Standard Deviation: {main_numbers_flattened.std():.2f}")
+
+print("\nStatistical Analysis of Powerball Numbers:")
+print(f"Mean: {powerball_numbers.mean():.2f}")
+print(f"Median: {pd.Series(powerball_numbers).median():.2f}")
+print(f"Mode: {pd.Series(powerball_numbers).mode().values}")
+print(f"Standard Deviation: {powerball_numbers.std():.2f}")
